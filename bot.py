@@ -328,12 +328,30 @@ async def check_pdf_updates(app):
             logger.error(f"Error notifying user {user_id}: {e}")
 
 
+async def post_init(app: Application):
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(
+        check_pdf_updates,
+        trigger="interval",
+        minutes=CHECK_INTERVAL_MINUTES,
+        args=[app],
+        next_run_time=datetime.now(),
+    )
+    scheduler.start()
+    logger.info(f"Scheduler started. Checking every {CHECK_INTERVAL_MINUTES} min.")
+
+
 def main():
     if not BOT_TOKEN:
         print("ERROR: BOT_TOKEN environment variable is not set!")
         return
 
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = (
+        Application.builder()
+        .token(BOT_TOKEN)
+        .post_init(post_init)
+        .build()
+    )
 
     conv = ConversationHandler(
         entry_points=[
@@ -352,17 +370,7 @@ def main():
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("stop", cmd_stop))
 
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(
-        check_pdf_updates,
-        trigger="interval",
-        minutes=CHECK_INTERVAL_MINUTES,
-        args=[app],
-        next_run_time=datetime.now(),
-    )
-    scheduler.start()
-
-    logger.info(f"Bot started. Checking every {CHECK_INTERVAL_MINUTES} min.")
+    logger.info("Bot started.")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
