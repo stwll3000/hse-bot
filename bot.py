@@ -1,7 +1,3 @@
-“””
-HSE Olympiad Results Monitor Bot
-Отслеживает изменения в PDF-таблице результатов ВШЭ олимпиады.
-“””
 
 import os
 import re
@@ -30,10 +26,10 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 # CONFIG — заменить на свои значения
 
 import os
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "")────────────────────────────────────────────
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "")#───────────────────────────────────────────
 
        # токен от @BotFather
-PDF_URL   = “https://olymp50.hse.ru/OLYMPREPORTS/MMO/SecondStage/Results/35752712464.pdf”
+PDF_URL   = "https://olymp50.hse.ru/OLYMPREPORTS/MMO/SecondStage/Results/35752712464.pdf"
 CHECK_INTERVAL_MINUTES = 15           # как часто проверять PDF
 DATA_FILE  = “bot_data.json”          # файл для хранения состояния
 LOG_LEVEL  = logging.INFO
@@ -41,10 +37,10 @@ LOG_LEVEL  = logging.INFO
 # ─────────────────────────────────────────────
 
 logging.basicConfig(
-format=”%(asctime)s | %(levelname)s | %(name)s — %(message)s”,
+format="%(asctime)s | %(levelname)s | %(name)s — %(message)s",
 level=LOG_LEVEL,
 )
-logger = logging.getLogger(**name**)
+logger = logging.getLogger(__name__)
 
 # Состояния ConversationHandler
 
@@ -57,7 +53,6 @@ ASK_CODE = 0
 # ══════════════════════════════════════════════
 
 def load_data() -> dict:
-“”“Загрузить данные из JSON-файла.”””
 if Path(DATA_FILE).exists():
 try:
 with open(DATA_FILE, encoding=“utf-8”) as f:
@@ -67,7 +62,7 @@ pass
 return {“users”: {}, “last_hash”: None, “last_results”: {}}
 
 def save_data(data: dict) -> None:
-“”“Сохранить данные в JSON-файл.”””
+"""Сохранить данные в JSON-файл."""
 with open(DATA_FILE, “w”, encoding=“utf-8”) as f:
 json.dump(data, f, ensure_ascii=False, indent=2)
 
@@ -78,10 +73,10 @@ json.dump(data, f, ensure_ascii=False, indent=2)
 # ══════════════════════════════════════════════
 
 def download_pdf(url: str) -> bytes | None:
-“”“Скачать PDF по URL.”””
+"""Скачать PDF по URL."""
 try:
 resp = requests.get(url, timeout=30, headers={
-“User-Agent”: “Mozilla/5.0 (compatible; HSE-bot/1.0)”
+"User-Agent": "Mozilla/5.0 (compatible; HSE-bot/1.0)"
 })
 resp.raise_for_status()
 return resp.content
@@ -90,14 +85,13 @@ logger.error(f”Не удалось скачать PDF: {e}”)
 return None
 
 def pdf_hash(content: bytes) -> str:
-“”“SHA-256 хэш содержимого PDF.”””
+"""SHA-256 хэш содержимого PDF."""
 return hashlib.sha256(content).hexdigest()
 
 def parse_results(pdf_bytes: bytes) -> dict[str, dict]:
-“””
-Распарсить PDF-таблицу результатов.
+"""Распарсить PDF-таблицу результатов."""
 
-```
+"""
 Ожидаемый формат строки (типичный для ВШЭ олимпиады):
   № | Код работы | Балл | ... (доп. колонки)
 
@@ -162,10 +156,10 @@ return results
 ```
 
 def _extract_code_score(cells: list[str]) -> tuple[str | None, str]:
-“””
+"""
 Извлечь код работы и балл из строки ячеек.
 
-```
+
 Форматы кода в ВШЭ олимпиадах:
   - Чисто числовой: 12345
   - Буквенно-цифровой: AB-12345, MMO-2024-001 и т.д.
@@ -212,12 +206,12 @@ return code, score
 # ══════════════════════════════════════════════
 
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> int:
-“”“Начало диалога — приветствие и запрос кода работы.”””
+""" Начало диалога — приветствие и запрос кода работы"""
 data = load_data()
 user_id = str(update.effective_user.id)
-name = update.effective_user.first_name or “участник”
+name = update.effective_user.first_name or "участник"
 
-```
+
 existing_code = data["users"].get(user_id, {}).get("code")
 if existing_code:
     await update.message.reply_text(
@@ -240,7 +234,7 @@ return ASK_CODE
 ```
 
 async def receive_code(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> int:
-“”“Принять и сохранить код работы.”””
+"""Принять и сохранить код работы."""
 code = update.message.text.strip()
 user_id = str(update.effective_user.id)
 
@@ -275,18 +269,18 @@ return ConversationHandler.END
 ```
 
 async def cmd_setcode(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> int:
-“”“Сменить код работы.”””
+"""Сменить код работы."""
 await update.message.reply_text(
-“🔄 Введи новый код работы:”,
+"🔄 Введи новый код работы:",
 reply_markup=ReplyKeyboardRemove(),
 )
 return ASK_CODE
 
 async def cmd_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
-“”“Показать текущий статус пользователя.”””
+"""Показать текущий статус пользователя."""
 data = load_data()
 user_id = str(update.effective_user.id)
-user = data[“users”].get(user_id)
+user = data["users"].get(user_id)
 
 ```
 if not user:
@@ -300,18 +294,18 @@ await _send_user_status(update.effective_chat.id, code, data)
 ```
 
 async def cmd_stop(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
-“”“Отписаться от уведомлений.”””
+"""Отписаться от уведомлений."""
 data = load_data()
 user_id = str(update.effective_user.id)
 if user_id in data[“users”]:
 del data[“users”][user_id]
 save_data(data)
 await update.message.reply_text(
-“🚫 Вы отписаны от уведомлений. /start — чтобы подписаться снова.”
+"🚫 Вы отписаны от уведомлений. /start — чтобы подписаться снова."
 )
 
 async def cmd_cancel(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> int:
-await update.message.reply_text(“Отменено.”, reply_markup=ReplyKeyboardRemove())
+await update.message.reply_text("Отменено.", reply_markup=ReplyKeyboardRemove())
 return ConversationHandler.END
 
 # ══════════════════════════════════════════════
@@ -321,7 +315,7 @@ return ConversationHandler.END
 # ══════════════════════════════════════════════
 
 async def _send_user_status(
-chat_id: int, code: str, data: dict, prefix: str = “”
+chat_id: int, code: str, data: dict, prefix: str = "
 ) -> None:
 “”“Отправить пользователю его текущий статус из последних результатов.”””
 from telegram import Bot
@@ -364,11 +358,11 @@ await bot.send_message(chat_id=chat_id, text=msg, parse_mode="HTML")
 # ══════════════════════════════════════════════
 
 async def check_pdf_updates(app) -> None:
-“””
+"""
 Скачать PDF, сравнить хэш с предыдущим.
 При изменении — распарсить и уведомить всех подписчиков.
-“””
-logger.info(“Проверка обновлений PDF…”)
+"""
+logger.info("Проверка обновлений PDF...")
 data = load_data()
 
 ```
@@ -459,10 +453,10 @@ for user_id, user in data["users"].items():
 # ══════════════════════════════════════════════
 
 def main() -> None:
-“”“Запуск бота.”””
-if BOT_TOKEN == “YOUR_BOT_TOKEN”:
-print(“❌ Укажи BOT_TOKEN в начале файла bot.py!”)
-return
+    """Запуск бота."""
+    if BOT_TOKEN == "YOUR_BOT_TOKEN":
+        print("❌ Укажи BOT_TOKEN в начале файла bot.py!")
+        return
 
 ```
 app = Application.builder().token(BOT_TOKEN).build()
