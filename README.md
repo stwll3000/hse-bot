@@ -1,4 +1,3 @@
-# hse-bot
 # HSE Olympiad Results Monitor Bot 🤖
 
 Telegram-бот для отслеживания изменений в таблице результатов олимпиады ВШЭ.

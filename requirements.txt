@@ -1,0 +1,4 @@
+python-telegram-bot==21.*
+apscheduler==3.*
+pdfplumber==0.*
+requests==2.*
