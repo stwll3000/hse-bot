@@ -51,9 +51,11 @@ def save_data(data):
 
 def download_pdf(url):
     try:
-        resp = requests.get(url, timeout=30, headers={
-            "User-Agent": "Mozilla/5.0 (compatible; HSE-bot/1.0)"
-        })
+        resp = requests.get(
+            url,
+            timeout=30,
+            headers={"User-Agent": "Mozilla/5.0 (compatible; HSE-bot/1.0)"},
+        )
         resp.raise_for_status()
         return resp.content
     except Exception as e:
@@ -119,26 +121,31 @@ def parse_results(pdf_bytes):
 
 
 def extract_code_score(cells):
+    """
+    Извлекает код работы и балл из строки таблицы.
+    Формат: № п/п | Позиция в рейтинге | Код работы | Регион | Балл
+    Пример: 64 | 63 | 155439 | Новосибирскаяобласть | 43
+    """
     code = None
     score = "-"
-    code_pattern = re.compile(r"^[A-Za-z0-9][A-Za-z0-9\-_]{3,}$")
-    score_pattern = re.compile(r"^\d+([.,]\d+)?$")
-    candidates_code = []
-    candidates_score = []
 
+    # Ищем числа в ячейках
+    numbers = []
     for cell in cells:
-        cell = cell.strip()
+        cell = str(cell).strip()
         if not cell:
             continue
-        if score_pattern.match(cell):
-            candidates_score.append(cell)
-        elif code_pattern.match(cell) and any(c.isdigit() for c in cell):
-            candidates_code.append(cell)
+        # Проверяем, является ли ячейка числом
+        if re.match(r"^\d+([.,]\d+)?$", cell):
+            numbers.append(cell)
 
-    if candidates_code:
-        code = max(candidates_code, key=len)
-    if candidates_score:
-        score = candidates_score[-1].replace(",", ".")
+    # Если нашли минимум 3 числа: номер строки, позиция в рейтинге, код работы
+    if len(numbers) >= 3:
+        # Код работы - это третье число (обычно 6-значное)
+        code = numbers[2]
+        # Балл - последнее число в строке
+        if len(numbers) >= 4:
+            score = numbers[-1].replace(",", ".")
 
     return code, score
 
@@ -346,12 +353,7 @@ def main():
         print("ERROR: BOT_TOKEN environment variable is not set!")
         return
 
-    app = (
-        Application.builder()
-        .token(BOT_TOKEN)
-        .post_init(post_init)
-        .build()
-    )
+    app = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
 
     conv = ConversationHandler(
         entry_points=[
@@ -359,9 +361,7 @@ def main():
             CommandHandler("setcode", cmd_setcode),
         ],
         states={
-            ASK_CODE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, receive_code)
-            ],
+            ASK_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_code)],
         },
         fallbacks=[CommandHandler("cancel", cmd_cancel)],
     )
